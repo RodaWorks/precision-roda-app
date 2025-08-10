@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Search, Filter, Bell, BarChart3, Wrench, Clock, CheckCircle, AlertCircle, Users, DollarSign, TrendingUp, Camera, FileText, Phone, Mail, MapPin, Eye, Edit, Save, X, Trash2 } from 'lucide-react';
+import { Calendar, Plus, Search, Filter, Bell, BarChart3, Wrench, Clock, CheckCircle, AlertCircle, Users, DollarSign, TrendingUp, Camera, FileText, Phone, Mail, MapPin, Eye, Edit, Save, X, Trash2, ArrowLeft, Map } from 'lucide-react';
 
 const EnhancedWheelApp = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showJobModal, setShowJobModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [draggedJob, setDraggedJob] = useState(null);
   
   const [jobs, setJobs] = useState([
@@ -17,11 +20,66 @@ const EnhancedWheelApp = () => {
   ]);
 
   const [customers, setCustomers] = useState([
-    { id: 1, name: 'Rod meilak', phone: '0412 345 678', email: 'rod@example.com', address: '123 Main St, Sydney' },
-    { id: 2, name: 'Westons Smash Repairs', phone: '02 9876 5432', email: 'contact@westons.com.au', address: '456 Industrial Ave, Sydney' },
-    { id: 3, name: 'D&G Smash Repairs', phone: '02 8765 4321', email: 'info@dgsmash.com.au', address: '789 Workshop Rd, Sydney' },
-    { id: 4, name: 'Westlakes Paint & Panel', phone: '02 7654 3210', email: 'jobs@westlakes.com.au', address: '321 Paint St, Sydney' },
-    { id: 5, name: 'Shipton Smash', phone: '02 6543 2109', email: 'admin@shiptonsmash.com.au', address: '654 Repair Ave, Sydney' }
+    { 
+      id: 1, 
+      name: 'Rod meilak', 
+      phone: '0412 345 678', 
+      email: 'rod@example.com', 
+      fullName: 'Rod Meilak',
+      billingAddress: '123 Main St, Surry Hills, NSW 2010',
+      shippingAddress: '123 Main St, Surry Hills, NSW 2010',
+      trade: true,
+      run: 'North',
+      coordinates: { lat: -33.8886, lng: 151.2094 }
+    },
+    { 
+      id: 2, 
+      name: 'Westons Smash Repairs', 
+      phone: '02 9876 5432', 
+      email: 'contact@westons.com.au',
+      fullName: 'Westons Smash Repairs Pty Ltd',
+      billingAddress: '456 Industrial Ave, Alexandria, NSW 2015',
+      shippingAddress: '456 Industrial Ave, Alexandria, NSW 2015',
+      trade: true,
+      run: 'South',
+      coordinates: { lat: -33.9067, lng: 151.1957 }
+    },
+    { 
+      id: 3, 
+      name: 'D&G Smash Repairs', 
+      phone: '02 8765 4321', 
+      email: 'info@dgsmash.com.au',
+      fullName: 'D&G Smash Repairs',
+      billingAddress: '789 Workshop Rd, Blacktown, NSW 2148',
+      shippingAddress: '789 Workshop Rd, Blacktown, NSW 2148',
+      trade: true,
+      run: 'West',
+      coordinates: { lat: -33.7715, lng: 150.9058 }
+    },
+    { 
+      id: 4, 
+      name: 'Westlakes Paint & Panel', 
+      phone: '02 7654 3210', 
+      email: 'jobs@westlakes.com.au',
+      fullName: 'Westlakes Paint & Panel Services',
+      billingAddress: '321 Paint St, Mt Druitt, NSW 2770',
+      shippingAddress: '321 Paint St, Mt Druitt, NSW 2770',
+      trade: true,
+      run: 'West',
+      coordinates: { lat: -33.7683, lng: 150.8203 }
+    },
+    { 
+      id: 5, 
+      name: 'Shipton Smash', 
+      phone: '02 6543 2109', 
+      email: 'admin@shiptonsmash.com.au',
+      fullName: 'Shipton Smash Repairs',
+      billingAddress: '654 Repair Ave, Bankstown, NSW 2200',
+      shippingAddress: '654 Repair Ave, Bankstown, NSW 2200',
+      trade: true,
+      run: 'South',
+      coordinates: { lat: -33.9185, lng: 151.0327 }
+    }
   ]);
 
   const [newJob, setNewJob] = useState({
@@ -43,7 +101,11 @@ const EnhancedWheelApp = () => {
     name: '',
     phone: '',
     email: '',
-    address: ''
+    fullName: '',
+    billingAddress: '',
+    shippingAddress: '',
+    trade: false,
+    run: 'North'
   });
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +128,7 @@ const EnhancedWheelApp = () => {
   const serviceOptions = ['Cosmetic Paint', 'Cosmetic CNC', 'Structural Repair', 'Polish Only'];
   const makeOptions = ['Toyota', 'Holden', 'Ford', 'Mercedes', 'BMW', 'Audi', 'Hyundai', 'Mazda', 'Subaru', 'LDV', 'Simmons', 'Other'];
   const rimSizeOptions = ['15', '16', '17', '18', '19', '20', '21', '22'];
+  const runOptions = ['North', 'South', 'East', 'West'];
 
   const generateJobId = () => {
     return 'P' + Math.random().toString(36).substr(2, 4);
@@ -83,6 +146,10 @@ const EnhancedWheelApp = () => {
     const matchesStatus = selectedStatus === 'all' || job.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
+
+  const getCustomerJobs = (customerName) => {
+    return jobs.filter(job => job.customer === customerName);
+  };
 
   const handleAddJob = () => {
     const jobId = generateJobId();
@@ -131,10 +198,60 @@ const EnhancedWheelApp = () => {
 
   const handleAddCustomer = () => {
     const customerId = Math.max(...customers.map(c => c.id)) + 1;
-    setCustomers([...customers, { ...newCustomer, id: customerId }]);
-    setNewCustomer({ name: '', phone: '', email: '', address: '' });
+    const customerToAdd = {
+      ...newCustomer,
+      id: customerId,
+      coordinates: { lat: -33.8688, lng: 151.2093 } // Default Sydney coordinates
+    };
+    setCustomers([...customers, customerToAdd]);
+    setNewCustomer({
+      name: '',
+      phone: '',
+      email: '',
+      fullName: '',
+      billingAddress: '',
+      shippingAddress: '',
+      trade: false,
+      run: 'North'
+    });
     setShowCustomerModal(false);
     alert('Customer added successfully!');
+  };
+
+  const handleEditCustomer = (customer) => {
+    setEditingCustomer({ ...customer });
+  };
+
+  const handleSaveCustomerEdit = () => {
+    setCustomers(customers.map(customer => 
+      customer.id === editingCustomer.id ? editingCustomer : customer
+    ));
+    
+    // Update jobs with new customer name if it changed
+    if (editingCustomer.name !== customers.find(c => c.id === editingCustomer.id)?.name) {
+      const oldName = customers.find(c => c.id === editingCustomer.id)?.name;
+      setJobs(jobs.map(job => 
+        job.customer === oldName ? { ...job, customer: editingCustomer.name } : job
+      ));
+    }
+    
+    setEditingCustomer(null);
+    alert('Customer updated successfully!');
+  };
+
+  const handleDeleteCustomer = (customerId) => {
+    const customer = customers.find(c => c.id === customerId);
+    const customerJobs = getCustomerJobs(customer.name);
+    
+    if (customerJobs.length > 0) {
+      alert(`Cannot delete customer with active jobs. Please complete or reassign ${customerJobs.length} job(s) first.`);
+      return;
+    }
+    
+    if (window.confirm('Are you sure you want to delete this customer?')) {
+      setCustomers(customers.filter(customer => customer.id !== customerId));
+      alert('Customer deleted successfully!');
+    }
   };
 
   const handleStatusChange = (jobId, newStatus) => {
@@ -150,9 +267,15 @@ const EnhancedWheelApp = () => {
     }));
   };
 
-  // Drag and Drop functionality
+  // Touch and Drag functionality for mobile and desktop
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Desktop drag and drop
   const handleDragStart = (e, job) => {
     setDraggedJob(job);
+    setIsDragging(true);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -168,6 +291,60 @@ const EnhancedWheelApp = () => {
       alert(`Job ${draggedJob.id} moved to ${newStatus}`);
     }
     setDraggedJob(null);
+    setIsDragging(false);
+  };
+
+  // Touch events for mobile
+  const handleTouchStart = (e, job) => {
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    });
+    setDraggedJob(job);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    });
+  };
+
+  const handleTouchEnd = (e, newStatus) => {
+    if (!touchStart || !touchEnd || !draggedJob) {
+      setDraggedJob(null);
+      setIsDragging(false);
+      return;
+    }
+
+    // Calculate distance moved
+    const deltaX = Math.abs(touchEnd.x - touchStart.x);
+    const deltaY = Math.abs(touchEnd.y - touchStart.y);
+    
+    // Only trigger if moved significantly (not just a tap)
+    if (deltaX > 50 || deltaY > 50) {
+      if (draggedJob.status !== newStatus) {
+        handleStatusChange(draggedJob.id, newStatus);
+        alert(`Job ${draggedJob.id} moved to ${newStatus}`);
+      }
+    }
+    
+    setDraggedJob(null);
+    setTouchStart(null);
+    setTouchEnd(null);
+    setIsDragging(false);
+  };
+
+  // Alternative: Simple button-based status change for mobile
+  const handleMobileStatusChange = (job) => {
+    const statusOrder = ['Received', 'Repair', 'Finish', 'Ready'];
+    const currentIndex = statusOrder.indexOf(job.status);
+    const nextIndex = (currentIndex + 1) % statusOrder.length;
+    const newStatus = statusOrder[nextIndex];
+    
+    handleStatusChange(job.id, newStatus);
+    alert(`Job ${job.id} moved to ${newStatus}`);
   };
 
   const getStatusCounts = () => {
@@ -186,6 +363,61 @@ const EnhancedWheelApp = () => {
     const completedJobs = jobs.filter(job => job.status === 'Ready');
     return completedJobs.reduce((sum, job) => sum + job.value, 0);
   };
+
+  // Map Modal Component
+  const MapModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+        <div className="p-6 border-b">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Customer & Job Locations</h2>
+            <button onClick={() => setShowMapModal(false)} className="text-gray-400 hover:text-gray-600">
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
+            <div className="text-center">
+              <Map size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600 mb-2">Interactive Map would display here</p>
+              <p className="text-sm text-gray-500">Showing customer locations and active job sites</p>
+            </div>
+          </div>
+          
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold mb-3">Customer Locations</h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {customers.map(customer => (
+                  <div key={customer.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span className="text-sm font-medium">{customer.name}</span>
+                    <span className="text-xs text-gray-500">{customer.run} Run</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-3">Active Jobs by Location</h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {jobs.filter(job => job.status !== 'Ready').map(job => {
+                  const customer = customers.find(c => c.name === job.customer);
+                  return (
+                    <div key={job.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm font-medium">{job.id}</span>
+                      <span className="text-xs text-gray-500">{customer?.run || 'Unknown'} Run</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   // Modal Components
   const JobModal = () => (
@@ -336,7 +568,7 @@ const EnhancedWheelApp = () => {
 
   const CustomerModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Add New Customer</h2>
@@ -347,47 +579,94 @@ const EnhancedWheelApp = () => {
         </div>
         
         <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Customer Name</label>
-            <input
-              type="text"
-              value={newCustomer.name}
-              onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-              className="w-full border rounded-lg px-3 py-2"
-              placeholder="Enter customer name"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Phone</label>
-            <input
-              type="tel"
-              value={newCustomer.phone}
-              onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-              className="w-full border rounded-lg px-3 py-2"
-              placeholder="0412 345 678"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={newCustomer.email}
-              onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-              className="w-full border rounded-lg px-3 py-2"
-              placeholder="customer@example.com"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Address</label>
-            <textarea
-              value={newCustomer.address}
-              onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
-              className="w-full border rounded-lg px-3 py-2 h-20"
-              placeholder="Enter full address"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Customer Name</label>
+              <input
+                type="text"
+                value={newCustomer.name}
+                onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="Enter customer name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Full Name</label>
+              <input
+                type="text"
+                value={newCustomer.fullName}
+                onChange={(e) => setNewCustomer({...newCustomer, fullName: e.target.value})}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="Full business/legal name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Phone</label>
+              <input
+                type="tel"
+                value={newCustomer.phone}
+                onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="0412 345 678"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                value={newCustomer.email}
+                onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="customer@example.com"
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-1">Billing Address</label>
+              <textarea
+                value={newCustomer.billingAddress}
+                onChange={(e) => setNewCustomer({...newCustomer, billingAddress: e.target.value})}
+                className="w-full border rounded-lg px-3 py-2 h-20"
+                placeholder="Enter full billing address"
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-1">Shipping Address</label>
+              <textarea
+                value={newCustomer.shippingAddress}
+                onChange={(e) => setNewCustomer({...newCustomer, shippingAddress: e.target.value})}
+                className="w-full border rounded-lg px-3 py-2 h-20"
+                placeholder="Enter full shipping address (if different from billing)"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Run</label>
+              <select
+                value={newCustomer.run}
+                onChange={(e) => setNewCustomer({...newCustomer, run: e.target.value})}
+                className="w-full border rounded-lg px-3 py-2"
+              >
+                {runOptions.map(run => (
+                  <option key={run} value={run}>{run}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="trade"
+                checked={newCustomer.trade}
+                onChange={(e) => setNewCustomer({...newCustomer, trade: e.target.checked})}
+                className="mr-2"
+              />
+              <label htmlFor="trade" className="text-sm font-medium">Trade Customer</label>
+            </div>
           </div>
         </div>
         
@@ -410,6 +689,351 @@ const EnhancedWheelApp = () => {
     </div>
   );
 
+  // Customer Detail View Component
+  const CustomerDetailView = () => {
+    const customer = selectedCustomer;
+    const customerJobs = getCustomerJobs(customer.name);
+    const isEditing = editingCustomer && editingCustomer.id === customer.id;
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setSelectedCustomer(null)}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <ArrowLeft size={24} />
+            </button>
+            <h1 className="text-3xl font-bold text-gray-900">{customer.name}</h1>
+          </div>
+          
+          <div className="flex space-x-3">
+            <button 
+              onClick={() => setShowMapModal(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-700 transition-colors"
+            >
+              <Map size={20} />
+              <span>View on Map</span>
+            </button>
+            <button 
+              onClick={() => {
+                setNewJob({...newJob, customer: customer.name});
+                setShowJobModal(true);
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={20} />
+              <span>New Job</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Customer Details Card */}
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          {isEditing ? (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Edit Customer Details</h2>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleSaveCustomerEdit}
+                    className="p-2 text-green-600 hover:bg-green-100 rounded"
+                  >
+                    <Save size={20} />
+                  </button>
+                  <button
+                    onClick={() => setEditingCustomer(null)}
+                    className="p-2 text-gray-400 hover:bg-gray-100 rounded"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Customer Name</label>
+                  <input
+                    type="text"
+                    value={editingCustomer.name}
+                    onChange={(e) => setEditingCustomer({...editingCustomer, name: e.target.value})}
+                    className="w-full border rounded px-2 py-1"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={editingCustomer.fullName}
+                    onChange={(e) => setEditingCustomer({...editingCustomer, fullName: e.target.value})}
+                    className="w-full border rounded px-2 py-1"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={editingCustomer.phone}
+                    onChange={(e) => setEditingCustomer({...editingCustomer, phone: e.target.value})}
+                    className="w-full border rounded px-2 py-1"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={editingCustomer.email}
+                    onChange={(e) => setEditingCustomer({...editingCustomer, email: e.target.value})}
+                    className="w-full border rounded px-2 py-1"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Billing Address</label>
+                  <textarea
+                    value={editingCustomer.billingAddress}
+                    onChange={(e) => setEditingCustomer({...editingCustomer, billingAddress: e.target.value})}
+                    className="w-full border rounded px-2 py-1 h-16"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Shipping Address</label>
+                  <textarea
+                    value={editingCustomer.shippingAddress}
+                    onChange={(e) => setEditingCustomer({...editingCustomer, shippingAddress: e.target.value})}
+                    className="w-full border rounded px-2 py-1 h-16"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Run</label>
+                  <select
+                    value={editingCustomer.run}
+                    onChange={(e) => setEditingCustomer({...editingCustomer, run: e.target.value})}
+                    className="w-full border rounded px-2 py-1"
+                  >
+                    {runOptions.map(run => (
+                      <option key={run} value={run}>{run}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="editTrade"
+                    checked={editingCustomer.trade}
+                    onChange={(e) => setEditingCustomer({...editingCustomer, trade: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <label htmlFor="editTrade" className="text-sm font-medium">Trade Customer</label>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-semibold">Customer Details</h2>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEditCustomer(customer)}
+                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                    title="Edit Customer"
+                  >
+                    <Edit size={20} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCustomer(customer.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete Customer"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900">Contact Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Users size={16} className="text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-600">Display Name</p>
+                        <p className="font-medium">{customer.name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <FileText size={16} className="text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-600">Full Name</p>
+                        <p className="font-medium">{customer.fullName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Phone size={16} className="text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-600">Phone</p>
+                        <p className="font-medium">{customer.phone}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Mail size={16} className="text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-600">Email</p>
+                        <p className="font-medium">{customer.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900">Billing Address</h3>
+                  <div className="flex items-start space-x-2">
+                    <MapPin size={16} className="text-gray-400 mt-1" />
+                    <div>
+                      <p className="text-sm text-gray-600">Address</p>
+                      <p className="font-medium">{customer.billingAddress}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900">Business Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Run</p>
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        customer.run === 'North' ? 'bg-blue-100 text-blue-800' :
+                        customer.run === 'South' ? 'bg-green-100 text-green-800' :
+                        customer.run === 'East' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {customer.run} Run
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Customer Type</p>
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        customer.trade ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {customer.trade ? 'Trade Customer' : 'Retail Customer'}
+                      </span>
+                    </div>
+                    {customer.shippingAddress && customer.shippingAddress !== customer.billingAddress && (
+                      <div>
+                        <p className="text-sm text-gray-600">Shipping Address</p>
+                        <p className="text-sm text-gray-900">{customer.shippingAddress}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Customer Jobs */}
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Jobs for {customer.name}</h2>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                {customerJobs.length} total jobs • ${customerJobs.reduce((sum, job) => sum + job.value, 0).toLocaleString()} total value
+              </span>
+            </div>
+          </div>
+          
+          {customerJobs.length === 0 ? (
+            <div className="text-center py-8">
+              <Wrench size={48} className="mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-600 mb-4">No jobs found for this customer</p>
+              <button 
+                onClick={() => {
+                  setNewJob({...newJob, customer: customer.name});
+                  setShowJobModal(true);
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Create First Job
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {customerJobs.map(job => {
+                const StatusIcon = statusConfig[job.status].icon;
+                return (
+                  <div key={job.id} className={`bg-gray-50 rounded-lg border-l-4 ${priorityColors[job.priority]} p-4 hover:bg-gray-100 transition-colors`}>
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <span className="text-lg font-bold text-blue-600">{job.id}</span>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusConfig[job.status].color}`}>
+                            <StatusIcon className="inline w-4 h-4 mr-1" />
+                            {job.status}
+                          </span>
+                          {job.priority === 'high' && (
+                            <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">HIGH PRIORITY</span>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-600">Service</p>
+                            <p className="font-medium">{job.service}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Vehicle</p>
+                            <p className="font-medium">{job.make} - {job.rimSize}"</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Value</p>
+                            <p className="font-medium">${job.value}</p>
+                          </div>
+                        </div>
+                        
+                        {job.comments && (
+                          <div className="mt-3 p-3 bg-white rounded-lg">
+                            <p className="text-sm text-gray-700">{job.comments}</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">Date In</p>
+                          <p className="font-medium">{job.dateIn}</p>
+                          {job.dateOut && (
+                            <>
+                              <p className="text-sm text-gray-600 mt-1">Date Out</p>
+                              <p className="font-medium">{job.dateOut}</p>
+                            </>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => handleEditJob(job)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Edit Job"
+                        >
+                          <Edit size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const DashboardView = () => {
     const statusCounts = getStatusCounts();
     const totalJobs = jobs.length;
@@ -421,6 +1045,13 @@ const EnhancedWheelApp = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <div className="flex space-x-3">
+            <button 
+              onClick={() => setShowMapModal(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-700 transition-colors"
+            >
+              <Map size={20} />
+              <span>View Map</span>
+            </button>
             <button 
               onClick={() => setShowJobModal(true)}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
@@ -647,7 +1278,12 @@ const EnhancedWheelApp = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                       <div>
                         <p className="text-gray-600">Customer</p>
-                        <p className="font-medium">{job.customer}</p>
+                        <button 
+                          onClick={() => setSelectedCustomer(customers.find(c => c.name === job.customer))}
+                          className="font-medium text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {job.customer}
+                        </button>
                       </div>
                       <div>
                         <p className="text-gray-600">Service</p>
@@ -709,6 +1345,7 @@ const EnhancedWheelApp = () => {
 
   const KanbanView = () => {
     const statusColumns = ['Received', 'Repair', 'Finish', 'Ready'];
+    const isMobile = window.innerWidth <= 768;
     
     return (
       <div className="space-y-6">
@@ -725,7 +1362,7 @@ const EnhancedWheelApp = () => {
         
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
           <p className="text-yellow-800 text-sm">
-            💡 <strong>Tip:</strong> Drag jobs between columns to update their status!
+            💡 <strong>Tip:</strong> {isMobile ? 'Tap the status button on job cards to move them between stages!' : 'Drag jobs between columns to update their status!'}
           </p>
         </div>
         
@@ -740,6 +1377,7 @@ const EnhancedWheelApp = () => {
                 className="bg-gray-50 rounded-xl p-4"
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, status)}
+                onTouchEnd={(e) => handleTouchEnd(e, status)}
               >
                 <div className={`flex items-center space-x-2 mb-4 p-3 rounded-lg ${statusConfig[status].color}`}>
                   <StatusIcon size={20} />
@@ -750,35 +1388,73 @@ const EnhancedWheelApp = () => {
                 </div>
                 
                 <div className="space-y-3">
-                  {statusJobs.map(job => (
-                    <div 
-                      key={job.id} 
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, job)}
-                      className={`bg-white rounded-lg p-4 shadow-sm border-l-4 ${priorityColors[job.priority]} cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-bold text-blue-600">{job.id}</span>
-                        {job.priority === 'high' && (
-                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  {statusJobs.map(job => {
+                    const statusOrder = ['Received', 'Repair', 'Finish', 'Ready'];
+                    const currentIndex = statusOrder.indexOf(job.status);
+                    const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+                    
+                    return (
+                      <div 
+                        key={job.id} 
+                        draggable={!isMobile}
+                        onDragStart={!isMobile ? (e) => handleDragStart(e, job) : undefined}
+                        onTouchStart={isMobile ? (e) => handleTouchStart(e, job) : undefined}
+                        onTouchMove={isMobile ? handleTouchMove : undefined}
+                        className={`bg-white rounded-lg p-4 shadow-sm border-l-4 ${priorityColors[job.priority]} ${
+                          !isMobile ? 'cursor-grab hover:shadow-md active:cursor-grabbing' : 'hover:shadow-md'
+                        } transition-shadow ${isDragging && draggedJob?.id === job.id ? 'opacity-50' : ''}`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-bold text-blue-600">{job.id}</span>
+                          {job.priority === 'high' && (
+                            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => setSelectedCustomer(customers.find(c => c.name === job.customer))}
+                          className="text-sm font-medium text-gray-900 mb-1 hover:text-blue-600 underline"
+                        >
+                          {job.customer}
+                        </button>
+                        <p className="text-xs text-gray-600 mb-2">{job.service}</p>
+                        <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+                          <span>{job.units} wheels</span>
+                          <span>${job.value}</span>
+                        </div>
+                        <div className="pt-2 border-t">
+                          <p className="text-xs text-gray-500 mb-2">{job.dateIn}</p>
+                          
+                          {/* Mobile: Status change button */}
+                          {isMobile && job.status !== 'Ready' && (
+                            <button
+                              onClick={() => handleMobileStatusChange(job)}
+                              className={`w-full py-2 px-3 rounded text-xs font-medium transition-colors ${
+                                statusConfig[nextStatus].color
+                              } hover:opacity-80`}
+                            >
+                              Move to {nextStatus} →
+                            </button>
+                          )}
+                          
+                          {/* Desktop: Edit button */}
+                          {!isMobile && (
+                            <button
+                              onClick={() => handleEditJob(job)}
+                              className="text-xs text-gray-500 hover:text-blue-600 transition-colors"
+                            >
+                              Edit Job
+                            </button>
+                          )}
+                        </div>
+                        
+                        {job.comments && (
+                          <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                            {job.comments.length > 50 ? job.comments.substring(0, 50) + '...' : job.comments}
+                          </div>
                         )}
                       </div>
-                      <p className="text-sm font-medium text-gray-900 mb-1">{job.customer}</p>
-                      <p className="text-xs text-gray-600 mb-2">{job.service}</p>
-                      <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>{job.units} wheels</span>
-                        <span>${job.value}</span>
-                      </div>
-                      <div className="mt-2 pt-2 border-t">
-                        <p className="text-xs text-gray-500">{job.dateIn}</p>
-                      </div>
-                      {job.comments && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
-                          {job.comments.length > 50 ? job.comments.substring(0, 50) + '...' : job.comments}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -792,49 +1468,114 @@ const EnhancedWheelApp = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
-        <button 
-          onClick={() => setShowCustomerModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={20} />
-          <span>Add Customer</span>
-        </button>
+        <div className="flex space-x-3">
+          <button 
+            onClick={() => setShowMapModal(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-700 transition-colors"
+          >
+            <Map size={20} />
+            <span>View Map</span>
+          </button>
+          <button 
+            onClick={() => setShowCustomerModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={20} />
+            <span>Add Customer</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4">
-        {customers.map(customer => (
-          <div key={customer.id} className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{customer.name}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Phone size={16} className="text-gray-400" />
-                    <span>{customer.phone}</span>
+        {customers.map(customer => {
+          const customerJobs = getCustomerJobs(customer.name);
+          const activeJobs = customerJobs.filter(job => job.status !== 'Ready');
+          const completedJobs = customerJobs.filter(job => job.status === 'Ready');
+          const totalValue = customerJobs.reduce((sum, job) => sum + job.value, 0);
+          
+          return (
+            <div key={customer.id} className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900">{customer.name}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      customer.trade ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {customer.trade ? 'Trade' : 'Retail'}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      customer.run === 'North' ? 'bg-blue-100 text-blue-800' :
+                      customer.run === 'South' ? 'bg-green-100 text-green-800' :
+                      customer.run === 'East' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {customer.run} Run
+                    </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Mail size={16} className="text-gray-400" />
-                    <span>{customer.email}</span>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Phone size={16} className="text-gray-400" />
+                      <span>{customer.phone}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Mail size={16} className="text-gray-400" />
+                      <span>{customer.email}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <MapPin size={16} className="text-gray-400" />
+                      <span className="truncate">{customer.billingAddress}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin size={16} className="text-gray-400" />
-                    <span>{customer.address}</span>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">Total Jobs</p>
+                      <p className="font-bold text-lg">{customerJobs.length}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Active Jobs</p>
+                      <p className="font-bold text-lg text-blue-600">{activeJobs.length}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Completed</p>
+                      <p className="font-bold text-lg text-green-600">{completedJobs.length}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Total Value</p>
+                      <p className="font-bold text-lg text-purple-600">${totalValue.toLocaleString()}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Active Jobs</p>
-                  <p className="font-bold text-lg">{jobs.filter(job => job.customer === customer.name).length}</p>
+                
+                <div className="flex items-center space-x-3">
+                  <button 
+                    onClick={() => setSelectedCustomer(customer)}
+                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                    title="View Customer Details"
+                  >
+                    <Eye size={20} />
+                  </button>
+                  <button 
+                    onClick={() => handleEditCustomer(customer)}
+                    className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                    title="Edit Customer"
+                  >
+                    <Edit size={20} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteCustomer(customer.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete Customer"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 </div>
-                <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
-                  <Eye size={20} />
-                </button>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -855,7 +1596,12 @@ const EnhancedWheelApp = () => {
           {jobs.filter(job => job.status !== 'Ready').map(job => (
             <div key={job.id} className="flex justify-between items-center p-3 border rounded-lg">
               <div>
-                <span className="font-medium">{job.id} - {job.customer}</span>
+                <button 
+                  onClick={() => setSelectedCustomer(customers.find(c => c.name === job.customer))}
+                  className="font-medium hover:text-blue-600 underline"
+                >
+                  {job.id} - {job.customer}
+                </button>
                 <span className={`ml-2 px-2 py-1 rounded text-xs ${statusConfig[job.status].color}`}>
                   {job.status}
                 </span>
@@ -877,6 +1623,10 @@ const EnhancedWheelApp = () => {
   ];
 
   const renderContent = () => {
+    if (selectedCustomer) {
+      return <CustomerDetailView />;
+    }
+    
     switch (activeTab) {
       case 'dashboard': return <DashboardView />;
       case 'jobs': return <JobsView />;
@@ -919,9 +1669,12 @@ const EnhancedWheelApp = () => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSelectedCustomer(null); // Reset customer detail view
+                  }}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === item.id
+                    activeTab === item.id && !selectedCustomer
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
@@ -943,6 +1696,7 @@ const EnhancedWheelApp = () => {
       {/* Modals */}
       {showJobModal && <JobModal />}
       {showCustomerModal && <CustomerModal />}
+      {showMapModal && <MapModal />}
     </div>
   );
 };
