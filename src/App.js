@@ -646,4 +646,305 @@ const EnhancedWheelApp = () => {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <p className="text-
+                        <p className="text-gray-600">Customer</p>
+                        <p className="font-medium">{job.customer}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Service</p>
+                        <p className="font-medium">{job.service}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Vehicle</p>
+                        <p className="font-medium">{job.make} - {job.rimSize}"</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Units & Value</p>
+                        <p className="font-medium">{job.units} wheels - ${job.value}</p>
+                      </div>
+                    </div>
+                    
+                    {job.comments && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-700">{job.comments}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">Date In</p>
+                      <p className="font-medium">{job.dateIn}</p>
+                      {job.dateOut && (
+                        <>
+                          <p className="text-sm text-gray-600 mt-1">Date Out</p>
+                          <p className="font-medium">{job.dateOut}</p>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex flex-col space-y-2">
+                      <button 
+                        onClick={() => handleEditJob(job)}
+                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Edit Job"
+                      >
+                        <Edit size={20} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteJob(job.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete Job"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const KanbanView = () => {
+    const statusColumns = ['Received', 'Repair', 'Finish', 'Ready'];
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Job Kanban</h1>
+          <button 
+            onClick={() => setShowJobModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={20} />
+            <span>New Job</span>
+          </button>
+        </div>
+        
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <p className="text-yellow-800 text-sm">
+            💡 <strong>Tip:</strong> Drag jobs between columns to update their status!
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-screen">
+          {statusColumns.map(status => {
+            const statusJobs = jobs.filter(job => job.status === status);
+            const StatusIcon = statusConfig[status].icon;
+            
+            return (
+              <div 
+                key={status} 
+                className="bg-gray-50 rounded-xl p-4"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, status)}
+              >
+                <div className={`flex items-center space-x-2 mb-4 p-3 rounded-lg ${statusConfig[status].color}`}>
+                  <StatusIcon size={20} />
+                  <h3 className="font-semibold">{status}</h3>
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs">
+                    {statusJobs.length}
+                  </span>
+                </div>
+                
+                <div className="space-y-3">
+                  {statusJobs.map(job => (
+                    <div 
+                      key={job.id} 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, job)}
+                      className={`bg-white rounded-lg p-4 shadow-sm border-l-4 ${priorityColors[job.priority]} cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-bold text-blue-600">{job.id}</span>
+                        {job.priority === 'high' && (
+                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-gray-900 mb-1">{job.customer}</p>
+                      <p className="text-xs text-gray-600 mb-2">{job.service}</p>
+                      <div className="flex justify-between items-center text-xs text-gray-500">
+                        <span>{job.units} wheels</span>
+                        <span>${job.value}</span>
+                      </div>
+                      <div className="mt-2 pt-2 border-t">
+                        <p className="text-xs text-gray-500">{job.dateIn}</p>
+                      </div>
+                      {job.comments && (
+                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                          {job.comments.length > 50 ? job.comments.substring(0, 50) + '...' : job.comments}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const CustomersView = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
+        <button 
+          onClick={() => setShowCustomerModal(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+        >
+          <Plus size={20} />
+          <span>Add Customer</span>
+        </button>
+      </div>
+
+      <div className="grid gap-4">
+        {customers.map(customer => (
+          <div key={customer.id} className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{customer.name}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <Phone size={16} className="text-gray-400" />
+                    <span>{customer.phone}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Mail size={16} className="text-gray-400" />
+                    <span>{customer.email}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin size={16} className="text-gray-400" />
+                    <span>{customer.address}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">Active Jobs</p>
+                  <p className="font-bold text-lg">{jobs.filter(job => job.customer === customer.name).length}</p>
+                </div>
+                <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
+                  <Eye size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const CalendarView = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
+        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors">
+          <Plus size={20} />
+          <span>Schedule Pickup</span>
+        </button>
+      </div>
+      
+      <div className="bg-white rounded-xl shadow-sm border p-6">
+        <h2 className="text-xl font-semibold mb-4">Upcoming Deadlines</h2>
+        <div className="space-y-3">
+          {jobs.filter(job => job.status !== 'Ready').map(job => (
+            <div key={job.id} className="flex justify-between items-center p-3 border rounded-lg">
+              <div>
+                <span className="font-medium">{job.id} - {job.customer}</span>
+                <span className={`ml-2 px-2 py-1 rounded text-xs ${statusConfig[job.status].color}`}>
+                  {job.status}
+                </span>
+              </div>
+              <span className="text-sm text-gray-500">{job.dateIn}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const navigationItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'jobs', label: 'Jobs', icon: Wrench },
+    { id: 'kanban', label: 'Kanban', icon: CheckCircle },
+    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'calendar', label: 'Calendar', icon: Calendar }
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard': return <DashboardView />;
+      case 'jobs': return <JobsView />;
+      case 'kanban': return <KanbanView />;
+      case 'customers': return <CustomersView />;
+      case 'calendar': return <CalendarView />;
+      default: return <DashboardView />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Wrench className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">Precision Roda</h1>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <Bell size={20} />
+              </button>
+              <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8 overflow-x-auto">
+            {navigationItems.map(item => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === item.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderContent()}
+      </main>
+
+      {/* Modals */}
+      {showJobModal && <JobModal />}
+      {showCustomerModal && <CustomerModal />}
+    </div>
+  );
+};
+
+export default EnhancedWheelApp;
